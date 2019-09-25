@@ -3,22 +3,42 @@ extern crate itertools;
 use std::fs;
 use std::collections::HashMap;
 use itertools::Itertools;
+use std::result::Result;
+use std::any::Any;
+use std::num::{ParseIntError};
 
 const GROUP_FILE: &'static str = "/etc/group";
 const PASSWD_FILE: &'static str = "/etc/passwd";
 
 type StringToStringSet = HashMap<String, Vec<String>>;
 
+// Entry from /etc/passwd representing a user
+struct PasswdEntry {
+    user: String,
+    user_id: i64,
+    group: String,
+}
+
 fn remove_comment_from_line<'a>(possibly_commented_line: &'a str) -> &str {
     let mut line_split_iter = (*possibly_commented_line).splitn(2, "#").into_iter();
     return line_split_iter.next().expect("Logic error");
 }
 
-fn parse_passwd_line<'a>(unparsed_line: &'a str) -> (String, String, String) {
-    let split_line = unparsed_line.split("");
-    let (user, _, userid, group) = split_line.into_iter().next_tuple().expect("Invalid line");
+fn parse_passwd_line<'a>(unparsed_line: &'a str) -> Result<PasswdEntry, ParseIntError> {
+    let split_line = unparsed_line.split(":");
+    let first_four = split_line[0..5].into_iter();
+    let (user, _, userid_raw, group) = first_four.next_tuple().expect("Invalid line");
 
-    return (String::from(user), String::from(userid), String::from(group));
+    // #region Handling of unsafe values
+    let userid = String::from(userid_raw);
+    let userid_parsed = userid.parse::<i64>()?;
+    // #endregion
+
+    Ok(PasswdEntry{
+        user: String::from(user),
+        user_id: userid_parsed,
+        group: String::from(group),
+    })
 }
 
 fn get_group_data() -> (StringToStringSet, StringToStringSet) {
@@ -27,17 +47,30 @@ fn get_group_data() -> (StringToStringSet, StringToStringSet) {
     
     let lines = contents.lines().into_iter();
 
-    let mut userids_to_users: StringToStringSet = HashMap::new();
-    let mut users_to_primarygroups: StringToStringSet = HashMap::new();
+    let userids_to_users: StringToStringSet = HashMap::new();
+    let users_to_primarygroups: StringToStringSet = HashMap::new();
 
-    for line in lines {
-        let line_cleaned = remove_comment_from_line(line).trim();
-
-        if line_cleaned == "" {
-            continue;
+    let lines_results = lines
+        .map(remove_comment_from_line)
+        .map(|line| line.trim())
+        .filter(|line| line.is_empty())
+        .map(parse_passwd_line);
+    
+    let mut line_errors = lines_results.clone().filter_map(|result| {
+        match result {
+            Ok(_) => None,
+            Err(e) => Some(e)
         }
+    }).peekable();
 
-        println!("line cleaned: {}", line_cleaned);
+    if let Some(_) = line_errors.peek() {
+        for error in line_errors {
+            println!("Unparseable /etc/passwd entry encountered. Skipping...");
+        }
+    }
+
+    for line_result in lines_results.filter_map(Result::ok) {
+        println!("user = {}", line_result.user);
     }
 
     (userids_to_users, users_to_primarygroups)
