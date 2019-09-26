@@ -7,6 +7,9 @@ use std::result::Result;
 use std::any::Any;
 use std::num::{ParseIntError};
 
+use std::io;
+use std::io::prelude::*; 
+
 const GROUP_FILE: &'static str = "/etc/group";
 const PASSWD_FILE: &'static str = "/etc/passwd";
 
@@ -25,14 +28,15 @@ fn remove_comment_from_line<'a>(possibly_commented_line: &'a str) -> &str {
 }
 
 fn parse_passwd_line<'a>(unparsed_line: &'a str) -> Result<PasswdEntry, ParseIntError> {
-    let split_line = unparsed_line.split(":");
-    let first_four = split_line[0..5].into_iter();
-    let (user, _, userid_raw, group) = first_four.next_tuple().expect("Invalid line");
+    let mut split_line = unparsed_line.split(":");
 
-    // #region Handling of unsafe values
+    let user = split_line.next().expect("Invalid line (missing field: user)");
+    let _ = split_line.next();
+    let userid_raw = split_line.next().expect("Invalid line  (missing field: user ID)");
+    let group = split_line.next().expect("Invalid line (missing field: group)");
+
     let userid = String::from(userid_raw);
     let userid_parsed = userid.parse::<i64>()?;
-    // #endregion
 
     Ok(PasswdEntry{
         user: String::from(user),
@@ -53,7 +57,7 @@ fn get_group_data() -> (StringToStringSet, StringToStringSet) {
     let lines_results = lines
         .map(remove_comment_from_line)
         .map(|line| line.trim())
-        .filter(|line| line.is_empty())
+        .filter(|line| !line.is_empty())
         .map(parse_passwd_line);
     
     let mut line_errors = lines_results.clone().filter_map(|result| {
@@ -77,8 +81,6 @@ fn get_group_data() -> (StringToStringSet, StringToStringSet) {
 }
 
 fn main() {
-    let (userids_to_users, users_toprimary_groups) = get_group_data();
+    let (userids_to_users, users_to_primarygroups) = get_group_data();
     // let primary_groups_to_users = get_primary_groups_to_users();
-
-    println!("Hello world");
 }
