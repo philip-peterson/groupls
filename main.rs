@@ -13,13 +13,22 @@ use std::io::prelude::*;
 const GROUP_FILE: &'static str = "/etc/group";
 const PASSWD_FILE: &'static str = "/etc/passwd";
 
-type StringToStringSet = HashMap<String, Vec<String>>;
+type StringList = Vec<String>;
+type IntToStringList = HashMap<i64, StringList>;
+type StringToStringList = HashMap<String, StringList>;
 
 // Entry from /etc/passwd representing a user
 struct PasswdEntry {
     user: String,
     user_id: i64,
+    primary_group_id: i64,
+}
+
+// Entry from /etc/group representing a group
+struct GroupEntry {
     group: String,
+    group_id: i64,
+    usernames: Vec<String>,
 }
 
 fn remove_comment_from_line<'a>(possibly_commented_line: &'a str) -> &str {
@@ -30,29 +39,54 @@ fn remove_comment_from_line<'a>(possibly_commented_line: &'a str) -> &str {
 fn parse_passwd_line<'a>(unparsed_line: &'a str) -> Result<PasswdEntry, ParseIntError> {
     let mut split_line = unparsed_line.split(":");
 
-    let user = split_line.next().expect("Invalid line (missing field: user)");
-    let _ = split_line.next();
-    let userid_raw = split_line.next().expect("Invalid line  (missing field: user ID)");
-    let group = split_line.next().expect("Invalid line (missing field: group)");
+    let username = split_line.next().expect("Invalid line (missing field: username)");
+    let _ = split_line.next(); // skip description
+    let userid_raw = split_line.next().expect("Invalid line (missing field: user ID)");
+    let groupid_raw = split_line.next().expect("Invalid line (missing field: group ID)");
 
     let userid = String::from(userid_raw);
-    let userid_parsed = userid.parse::<i64>()?;
+    let userid_parsed = userid.parse::<i64>().expect("Invalid user ID");
+
+    let groupid = String::from(userid_raw);
+    let groupid_parsed = userid.parse::<i64>().expect("Invalid group ID");
 
     Ok(PasswdEntry{
-        user: String::from(user),
+        user: String::from(username),
         user_id: userid_parsed,
-        group: String::from(group),
+        primary_group_id: groupid_parsed,
     })
 }
 
-fn get_group_data() -> (StringToStringSet, StringToStringSet) {
+fn parse_group_line<'a>(unparsed_line: &'a str) -> Result<GroupEntry, ParseIntError> {
+    let mut split_line = unparsed_line.split(":");
+
+    let groupname = split_line.next().expect("Invalid line (missing field: group name)");
+    let _ = split_line.next(); // skip password
+    let groupid_raw = split_line.next().expect("Invalid line (missing field: group ID)");
+    let usernames_raw = split_line.next().expect("Invalid line (missing field: usernames)");
+
+    let groupid = String::from(groupid_raw);
+    let groupid_parsed = groupid.parse::<i64>().expect("Invalid group ID");
+
+    let usernames = usernames_raw
+        .split(",")
+        .map(|field| field.trim())
+        .filter(|field| !field.is_empty())
+        .map(String::from)
+        .collect();
+    
+    Ok(GroupEntry{
+        group: String::from(groupname),
+        group_id: groupid_parsed,
+        usernames: usernames
+    })
+}
+
+fn read_users() -> Vec<PasswdEntry> {
     let contents = fs::read_to_string(PASSWD_FILE)
         .expect("Something went wrong reading the file");
     
     let lines = contents.lines().into_iter();
-
-    let userids_to_users: StringToStringSet = HashMap::new();
-    let users_to_primarygroups: StringToStringSet = HashMap::new();
 
     let lines_results = lines
         .map(remove_comment_from_line)
@@ -69,18 +103,42 @@ fn get_group_data() -> (StringToStringSet, StringToStringSet) {
 
     if let Some(_) = line_errors.peek() {
         for error in line_errors {
-            println!("Unparseable /etc/passwd entry encountered. Skipping...");
+            println!("Unparseable user entry encountered. Skipping...");
         }
     }
 
-    for line_result in lines_results.filter_map(Result::ok) {
-        println!("user = {}", line_result.user);
+    return lines_results.filter_map(Result::ok).collect();
+}
+
+fn read_groups() -> Vec<GroupEntry> {
+    let contents = fs::read_to_string(GROUP_FILE)
+        .expect("Something went wrong reading the file");
+    
+    let lines = contents.lines().into_iter();
+
+    let lines_results = lines
+        .map(remove_comment_from_line)
+        .map(|line| line.trim())
+        .filter(|line| !line.is_empty())
+        .map(parse_group_line);
+    
+    let mut line_errors = lines_results.clone().filter_map(|result| {
+        match result {
+            Ok(_) => None,
+            Err(e) => Some(e)
+        }
+    }).peekable();
+
+    if let Some(_) = line_errors.peek() {
+        for error in line_errors {
+            println!("Unparseable group entry encountered. Skipping...");
+        }
     }
 
-    (userids_to_users, users_to_primarygroups)
+    return lines_results.filter_map(Result::ok).collect();
 }
 
 fn main() {
-    let (userids_to_users, users_to_primarygroups) = get_group_data();
-    // let primary_groups_to_users = get_primary_groups_to_users();
+    let users = read_users();
+    let groups = read_groups();
 }
