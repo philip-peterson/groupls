@@ -1,11 +1,17 @@
-extern crate itertools;
+#![feature(try_blocks)]
 
+extern crate itertools;
+extern crate clap;
+
+use clap::{Arg, App};
 use std::fs;
 use std::collections::HashMap;
 use itertools::Itertools;
 use std::result::Result;
 use std::any::Any;
 use std::num::{ParseIntError};
+use std::io::{Error, ErrorKind};
+use std::format;
 
 use std::io;
 use std::io::prelude::*; 
@@ -31,15 +37,22 @@ struct GroupEntry {
     usernames: Vec<String>,
 }
 
+fn missing_field_error(field_name: &'static str) -> Error {
+    return Error::new(ErrorKind::Other, format!("Invalid line (missing field: {})", field_name));
+}
+
 fn remove_comment_from_line<'a>(possibly_commented_line: &'a str) -> &str {
     let mut line_split_iter = (*possibly_commented_line).splitn(2, "#").into_iter();
     return line_split_iter.next().expect("Logic error");
 }
 
-fn parse_passwd_line<'a>(unparsed_line: &'a str) -> Result<PasswdEntry, ParseIntError> {
+fn parse_passwd_line<'a>(unparsed_line: &'a str) -> Result<PasswdEntry, Error> {
     let mut split_line = unparsed_line.split(":");
 
-    let username = split_line.next().expect("Invalid line (missing field: username)");
+    let username = split_line.next()
+        .ok_or(
+            missing_field_error("username")
+        )?;
     let _ = split_line.next(); // skip description
     let userid_raw = split_line.next().expect("Invalid line (missing field: user ID)");
     let groupid_raw = split_line.next().expect("Invalid line (missing field: group ID)");
@@ -51,7 +64,7 @@ fn parse_passwd_line<'a>(unparsed_line: &'a str) -> Result<PasswdEntry, ParseInt
     let groupid_parsed = userid.parse::<i64>().expect("Invalid group ID");
 
     Ok(PasswdEntry{
-        user: String::from(username),
+        user: String::from(username.trim()),
         user_id: userid_parsed,
         primary_group_id: groupid_parsed,
     })
@@ -121,7 +134,7 @@ fn read_groups() -> Vec<GroupEntry> {
         .map(|line| line.trim())
         .filter(|line| !line.is_empty())
         .map(parse_group_line);
-    
+
     let mut line_errors = lines_results.clone().filter_map(|result| {
         match result {
             Ok(_) => None,
@@ -141,4 +154,6 @@ fn read_groups() -> Vec<GroupEntry> {
 fn main() {
     let users = read_users();
     let groups = read_groups();
+
+
 }
