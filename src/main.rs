@@ -1,45 +1,26 @@
 #![feature(try_blocks)]
 
+mod records;
 mod errors;
+mod shapes;
 
 extern crate itertools;
 extern crate clap;
 
 use clap::{Arg, App};
 use std::fs;
-use std::collections::HashMap;
-use itertools::Itertools;
 use std::result::Result;
-use std::any::Any;
 use std::num::{ParseIntError};
-use std::io::{Error, ErrorKind};
-use std::format;
 
-use std::io;
-use std::io::prelude::*; 
+use std::io::{Error, ErrorKind};
+use std::path::{Path};
 
 pub use errors::{missing_field_error};
+pub use shapes::{StringList, IntToStringList, StringToStringList};
+pub use records::{GroupEntry, PasswdEntry};
 
 const GROUP_FILE: &'static str = "/etc/group";
 const PASSWD_FILE: &'static str = "/etc/passwd";
-
-type StringList = Vec<String>;
-type IntToStringList = HashMap<i64, StringList>;
-type StringToStringList = HashMap<String, StringList>;
-
-// Entry from /etc/passwd representing a user
-struct PasswdEntry {
-    user: String,
-    user_id: i64,
-    primary_group_id: i64,
-}
-
-// Entry from /etc/group representing a group
-struct GroupEntry {
-    group: String,
-    group_id: i64,
-    usernames: Vec<String>,
-}
 
 fn remove_comment_from_line<'a>(possibly_commented_line: &'a str) -> &str {
     let mut line_split_iter = (*possibly_commented_line).splitn(2, "#").into_iter();
@@ -96,7 +77,7 @@ fn parse_group_line<'a>(unparsed_line: &'a str) -> Result<GroupEntry, ParseIntEr
 }
 
 fn read_users() -> Vec<PasswdEntry> {
-    let contents = fs::read_to_string(PASSWD_FILE)
+    let contents = fs::read_to_string(Path::new(PASSWD_FILE))
         .expect("Something went wrong reading the file");
     
     let lines = contents.lines().into_iter();
@@ -106,7 +87,7 @@ fn read_users() -> Vec<PasswdEntry> {
         .map(|line| line.trim())
         .filter(|line| !line.is_empty())
         .map(parse_passwd_line);
-    
+
     let mut line_errors = lines_results.clone().filter_map(|result| {
         match result {
             Ok(_) => None,
@@ -124,7 +105,7 @@ fn read_users() -> Vec<PasswdEntry> {
 }
 
 fn read_groups() -> Vec<GroupEntry> {
-    let contents = fs::read_to_string(GROUP_FILE)
+    let contents = fs::read_to_string(Path::new(GROUP_FILE))
         .expect("Something went wrong reading the file");
     
     let lines = contents.lines().into_iter();
@@ -154,6 +135,4 @@ fn read_groups() -> Vec<GroupEntry> {
 fn main() {
     let users = read_users();
     let groups = read_groups();
-
-
 }
