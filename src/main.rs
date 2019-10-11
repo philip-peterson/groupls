@@ -1,5 +1,7 @@
 #![feature(try_blocks)]
 
+mod errors;
+
 extern crate itertools;
 extern crate clap;
 
@@ -15,6 +17,8 @@ use std::format;
 
 use std::io;
 use std::io::prelude::*; 
+
+pub use errors::{missing_field_error};
 
 const GROUP_FILE: &'static str = "/etc/group";
 const PASSWD_FILE: &'static str = "/etc/passwd";
@@ -35,10 +39,6 @@ struct GroupEntry {
     group: String,
     group_id: i64,
     usernames: Vec<String>,
-}
-
-fn missing_field_error(field_name: &'static str) -> Error {
-    return Error::new(ErrorKind::Other, format!("Invalid line (missing field: {})", field_name));
 }
 
 fn remove_comment_from_line<'a>(possibly_commented_line: &'a str) -> &str {

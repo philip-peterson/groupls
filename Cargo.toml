@@ -10,6 +10,6 @@ edition = "2018"
 itertools = "0.8.0"
 clap = "2.33.0"
 
-[[bin]]
-name = "groupls2"
-path = "main.rs"
+#[[bin]]
+#name = "groupls2"
+#path = "src/main.rs"
