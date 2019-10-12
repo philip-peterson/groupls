@@ -12,12 +12,15 @@ use std::iter::Iterator;
 use clap::{Arg, App, SubCommand, ArgGroup};
 use std::fs;
 use std::result::Result;
+use std::boxed::{Box};
 
 use std::path::{Path};
 
 pub use errors::{missing_field_error, invalid_system_state, Error};
 pub use shapes::{StringList, IntToStringList, StringToStringList};
 pub use records::{GroupEntry, PasswdEntry};
+
+use std::io::{Error as IoError, ErrorKind};
 
 const GROUP_FILE: &'static str = "/etc/group";
 const PASSWD_FILE: &'static str = "/etc/passwd";
@@ -94,6 +97,7 @@ fn read_users() -> Vec<PasswdEntry> {
 
     if let Some(_) = line_errors.peek() {
         for error in line_errors {
+            println!("{}", error);
             println!("Unparseable user entry encountered. Skipping...");
         }
     }
@@ -101,10 +105,13 @@ fn read_users() -> Vec<PasswdEntry> {
     return lines_results.filter_map(Result::ok).collect();
 }
 
-fn read_groups() -> Vec<GroupEntry> {
-    let contents = fs::read_to_string(Path::new(GROUP_FILE))
-        .expect("Something went wrong reading the file");
-    
+fn read_groups<'a>() -> Result<Vec<GroupEntry>, Box<dyn Error>> {
+    let contents = fs::read_to_string(Path::new(GROUP_FILE)).map_err(
+        |e| {
+            Box::new(e) as Box<dyn Error>
+        }
+    )?;
+
     let lines = contents.lines().into_iter();
 
     let lines_results = lines
@@ -122,11 +129,13 @@ fn read_groups() -> Vec<GroupEntry> {
 
     if let Some(_) = line_errors.peek() {
         for error in line_errors {
+            println!("{}", error);
             println!("Unparseable group entry encountered. Skipping...");
         }
     }
 
-    return lines_results.filter_map(Result::ok).collect();
+    let results: std::vec::Vec<records::GroupEntry> = lines_results.filter_map(Result::ok).collect();
+    return Ok(results);
 }
 
 fn main() {
