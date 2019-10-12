@@ -76,9 +76,12 @@ fn parse_group_line<'a, 'b>(unparsed_line: &'a str) -> Result<GroupEntry, Box<dy
     })
 }
 
-fn read_users() -> Vec<PasswdEntry> {
-    let contents = fs::read_to_string(Path::new(PASSWD_FILE))
-        .expect("Something went wrong reading the file");
+fn read_users() -> Result<Vec<PasswdEntry>, Box<dyn Error>> {
+    let contents = fs::read_to_string(Path::new(PASSWD_FILE)).map_err(
+        |e| {
+            Box::new(e) as Box<dyn Error>
+        }
+    )?;
     
     let lines = contents.lines().into_iter();
 
@@ -97,12 +100,12 @@ fn read_users() -> Vec<PasswdEntry> {
 
     if let Some(_) = line_errors.peek() {
         for error in line_errors {
-            println!("{}", error);
-            println!("Unparseable user entry encountered. Skipping...");
+            eprintln!("{}", error);
+            eprintln!("Unparseable user entry encountered. Skipping...");
         }
     }
 
-    return lines_results.filter_map(Result::ok).collect();
+    return Ok(lines_results.filter_map(Result::ok).collect());
 }
 
 fn read_groups<'a>() -> Result<Vec<GroupEntry>, Box<dyn Error>> {
@@ -129,8 +132,8 @@ fn read_groups<'a>() -> Result<Vec<GroupEntry>, Box<dyn Error>> {
 
     if let Some(_) = line_errors.peek() {
         for error in line_errors {
-            println!("{}", error);
-            println!("Unparseable group entry encountered. Skipping...");
+            eprintln!("{}", error);
+            eprintln!("Unparseable group entry encountered. Skipping...");
         }
     }
 
