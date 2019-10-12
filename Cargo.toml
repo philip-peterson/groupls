@@ -1,5 +1,5 @@
 [package]
-name = "groupls2"
+name = "groupls"
 version = "0.1.0"
 authors = ["ironmagma"]
 edition = "2018"
