@@ -1,4 +1,5 @@
 #![feature(try_blocks)]
+#![feature(trait_alias)]
 
 mod records;
 mod errors;
@@ -10,12 +11,10 @@ extern crate clap;
 use clap::{Arg, App};
 use std::fs;
 use std::result::Result;
-use std::num::{ParseIntError};
 
-use std::io::{Error, ErrorKind};
 use std::path::{Path};
 
-pub use errors::{missing_field_error};
+pub use errors::{missing_field_error, invalid_system_state, Error};
 pub use shapes::{StringList, IntToStringList, StringToStringList};
 pub use records::{GroupEntry, PasswdEntry};
 
@@ -27,22 +26,19 @@ fn remove_comment_from_line<'a>(possibly_commented_line: &'a str) -> &str {
     return line_split_iter.next().expect("Logic error");
 }
 
-fn parse_passwd_line<'a>(unparsed_line: &'a str) -> Result<PasswdEntry, Error> {
+fn parse_passwd_line<'a, 'b>(unparsed_line: &'a str) -> Result<PasswdEntry, Box<dyn Error>> {
     let mut split_line = unparsed_line.split(":");
 
-    let username = split_line.next()
-        .ok_or(
-            missing_field_error("username")
-        )?;
+    let username = split_line.next().ok_or( missing_field_error("username")  )?;
     let _ = split_line.next(); // skip description
-    let userid_raw = split_line.next().expect("Invalid line (missing field: user ID)");
-    let groupid_raw = split_line.next().expect("Invalid line (missing field: group ID)");
+    let userid_raw = split_line.next().ok_or(missing_field_error("user ID") )?;
+    let groupid_raw = split_line.next().ok_or(missing_field_error("group ID") )?;
 
     let userid = String::from(userid_raw);
-    let userid_parsed = userid.parse::<i64>().expect("Invalid user ID");
+    let userid_parsed = userid.parse::<i64>().map_err(|_| invalid_system_state("user ID number") )?;
 
     let groupid = String::from(userid_raw);
-    let groupid_parsed = userid.parse::<i64>().expect("Invalid group ID");
+    let groupid_parsed = userid.parse::<i64>().map_err(|_| invalid_system_state("group ID number") )?;
 
     Ok(PasswdEntry{
         user: String::from(username.trim()),
@@ -51,16 +47,16 @@ fn parse_passwd_line<'a>(unparsed_line: &'a str) -> Result<PasswdEntry, Error> {
     })
 }
 
-fn parse_group_line<'a>(unparsed_line: &'a str) -> Result<GroupEntry, ParseIntError> {
+fn parse_group_line<'a, 'b>(unparsed_line: &'a str) -> Result<GroupEntry, Box<dyn Error>> {
     let mut split_line = unparsed_line.split(":");
 
-    let groupname = split_line.next().expect("Invalid line (missing field: group name)");
+    let groupname = split_line.next().ok_or(missing_field_error("group name"))?;
     let _ = split_line.next(); // skip password
-    let groupid_raw = split_line.next().expect("Invalid line (missing field: group ID)");
-    let usernames_raw = split_line.next().expect("Invalid line (missing field: usernames)");
+    let groupid_raw = split_line.next().ok_or(missing_field_error("group ID"))?;
+    let usernames_raw = split_line.next().ok_or(missing_field_error("usernames"))?;
 
     let groupid = String::from(groupid_raw);
-    let groupid_parsed = groupid.parse::<i64>().expect("Invalid group ID");
+    let groupid_parsed = groupid.parse::<i64>().map_err(|_| invalid_system_state("group ID number"))?;
 
     let usernames = usernames_raw
         .split(",")
