@@ -66,5 +66,6 @@ pub fn read_groups<'a>() -> Result<Vec<GroupEntry>, Box<dyn Error>> {
 
     let results: std::vec::Vec<GroupEntry> =
         lines_results.filter_map(Result::ok).collect();
-    return Ok(results);
+
+    Ok(results)
 }

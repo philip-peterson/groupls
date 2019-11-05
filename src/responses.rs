@@ -17,32 +17,50 @@ pub struct User {
 
 #[derive(Serialize)]
 pub struct UserQuery {
-    user_name: String;
-    groups: Vec<Group>;
+    user_name: String,
+    groups: Vec<Group>,
 }
 
 #[derive(Serialize)]
 pub struct GroupQuery {
-    group_name: String;
-    users: Vec<User>;
+    group_name: String,
+    users: Vec<User>,
 }
 
 // Responses
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct GroupOverview {
+pub struct GroupOverviewQueryResult {
+    api_version: String,
     groups: Vec<Group>,
 }
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct ObjectQueryResult {
-    group_queries: Vec<GroupQuery>,
-    user_queries: Vec<UserQuery>,
+pub struct GroupQueryResult {
+    api_version: String,
+    group: GroupQuery,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UserQueryResult {
+    api_version: String,
+    user: UserQuery,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct NoResponseResult {
+    api_version: String,
+    exit_code: i64,
+    error: String,
 }
 
 pub enum TopLevelResponse {
-    GroupOverview(GroupOverview),
-    ObjectQueryResult(ObjectQueryResult),
+    GroupOverview(GroupOverviewQueryResult),
+    GroupQuery(GroupQueryResult),
+    UserQuery(UserQueryResult),
+    NoResponse(NoResponseResult)
 }
