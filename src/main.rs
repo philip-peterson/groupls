@@ -35,6 +35,45 @@ pub use responses::{
 
 use std::io::{Error as IoError, ErrorKind};
 
+const USAGE_TEXT: &'static str = r#"usage: groupls [--help] [-u | -g | --user | --group]
+        [--json] [--] <OBJECT>
+
+`groupls` allows you to explore group permissions.
+
+Supported options:
+    -u, --user    Indicates that the OBJECT is the name of a user
+    -g, --group   Indicates that the OBJECT is the name of a group
+    --help        Displays this help message
+    --json        Indicates that the program output should be formatted as JSON.
+                  (Note that this is not supported when displaying this help message
+                   or error messages.)
+    
+Three invocation forms are supported:
+
+    groupls
+        - prints a list of all groups on this system.
+    
+    groupls -u alice
+        - prints a list of all groups that the user called alice is a member of.
+    
+    groupls -g admin
+        - prints a list of all users that belong to the group called admin.
+
+Untrusted input:
+
+    If invoking `groupls` with untrusted input, be sure to separate the option
+    arguments from the positional arguments with a `--` as such:
+
+    groupls -u -- "$USER"
+    
+    or
+    
+    groupls -g -- "$GROUP"
+
+    Doing so will ensure that special argument values such as `--help` do not
+    interfere with the output formatting.
+"#;
+
 mod error_codes {
     pub const INVALID_USAGE: i32 = 10;
 }
@@ -209,9 +248,16 @@ fn parse_argv_data(args: Vec<String>) -> Result<
     }
 
     if let Some(unrecognized_flag) = unrecognized_flags.iter().next() {
-        return Err(Box::new(errors::usage_error(
-            format!("Unrecognized flag {}", unrecognized_flag)
-        )))
+        if flag_args.contains(&FlagArg::HELP) {
+            // As a special case, we ignore unrecognized flags if we can
+            // find a --help thrown somewhere in there. This is similar
+            // to how some other CLI utilities work.
+            return Ok((flag_args, vec![]))
+        } else {
+            return Err(Box::new(errors::usage_error(
+                format!("Unrecognized flag {}", unrecognized_flag)
+            )))
+        }
     }
 
     let trailing_pos_args =
@@ -220,7 +266,9 @@ fn parse_argv_data(args: Vec<String>) -> Result<
                 &args[pos+1..]
             },
             None => &[]
-        }; // TODO tie these in
+        };
+
+    positional_args.extend_from_slice(trailing_pos_args);
 
     return Ok((
         flag_args, positional_args
@@ -233,46 +281,23 @@ fn main() {
 
     match argv_data {
         Err(e) => {
-            println!("error");
+            println!("Usage error: {}. For usage help, try: groupls --help", e);
             // TODO add nice message
             exit(error_codes::INVALID_USAGE)
         },
         Ok((flag_args, pos_args)) => {
-            // "explore group memberships"
-            //     Arg::from_usage("--json")
-            //         .multiple(false)
-            //         .takes_value(false)
-            //         .required(false)
-            //         .help("If set, the output of this command will be a JSON blob"),
-            // )
-            // .arg(
-            //     Arg::with_name("object_name")
-            //         .multiple(false)
-            //         .takes_value(true)
-            //         .required(false)
-            //         .help("A user or group (whose groups or users, respectively, are to be listed out)"),
-            // )
+            if flag_args.contains(&FlagArg::HELP) {
+                println!("{}", USAGE_TEXT);
+                exit(0);
+            }
 
-            // let is_using_json = matches.is_present("json");
-            // let mode = match (matches.value_of("mode")) {
-            //     Some("-u") | Some("--user") => "user",
-            //     Some("-g") | Some("--group") => "group",
-            //     Some(&_) | None => "all_groups"
-            // };
-            // let object_name = matches.value_of("object_name").map(|name| name.to_string());
+            let response = groupls(user_to_list, group_to_list);
+            if let TopLevelResponse::NoResponse(result) = response {
+                exit(result.exit_code);
 
-            // let group_to_list = if (mode == "group") {
-            //     object_name.clone()
-            // } else {
-            //     None
-            // };
-            // let user_to_list = if (mode == "user") {
-            //     object_name.clone()
-            // } else {
-            //     None
-            // };
-
-            // groupls(user_to_list, group_to_list);
+            } else {
+                
+            }
         }
     }
 }

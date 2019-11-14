@@ -15,7 +15,7 @@ pub fn internal_error<'a>(message: String) -> Box<dyn Error> {
 pub fn usage_error<'a>(message: String) -> Box<dyn Error> {
     return Box::new(IoError::new(
         IoErrorKind::Other,
-        format!("Incorrect usage. {}", message),
+        format!("{}", message),
     ));
 }
 
