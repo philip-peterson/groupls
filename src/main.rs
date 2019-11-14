@@ -78,7 +78,10 @@ mod error_codes {
     pub const INVALID_USAGE: i32 = 10;
 }
 
-fn groupls(user_to_list: Option<String>, group_to_list: Option<String>) -> TopLevelResponse {
+fn groupls(target_objects: TargetObjects) -> TopLevelResponse {
+    let user_to_list = target_objects.user_to_list;
+    let group_to_list = target_objects.group_to_list;
+
     let groups_raw = load::read_groups();
 
     match groups_raw {
@@ -159,6 +162,29 @@ enum FlagArg {
     HELP,
     USER,
     GROUP
+}
+
+struct TargetObjects {
+    user_to_list: Option<String>,
+    group_to_list: Option<String>
+}
+
+fn process_args(flag_args: HashSet<FlagArg>, pos_args: Vec<String>) -> Result<
+    TargetObjects,
+    Box<dyn Error>
+> {
+    if flag_args.contains(&FlagArg::USER) {
+
+    } else if flag_args.contains(&FlagArg::GROUP) {
+        
+    } else {
+        
+    };
+
+    return Ok(TargetObjects{
+        user_to_list: Some("".to_string()),
+        group_to_list: None
+    })
 }
 
 fn parse_argv_data(args: Vec<String>) -> Result<
@@ -275,6 +301,28 @@ fn parse_argv_data(args: Vec<String>) -> Result<
     ))
 }
 
+fn output_response(response: TopLevelResponse, is_json: bool) {
+    let exit_code = match response.clone() {
+        TopLevelResponse::NoResponse(result) => {
+            result.exit_code
+        },
+        _ => 0
+    };
+
+    // TODO print output
+    match response {
+        TopLevelResponse::GroupOverview(result) => {
+        },
+        TopLevelResponse::UserQuery(result) => {
+        },
+        TopLevelResponse::GroupQuery(result) => {
+        },
+        _ => {}
+    };
+    
+    exit(exit_code);
+}
+
 fn main() {
     let args: Vec<String> = env::args().collect();
     let argv_data = parse_argv_data(args);
@@ -282,7 +330,6 @@ fn main() {
     match argv_data {
         Err(e) => {
             println!("Usage error: {}. For usage help, try: groupls --help", e);
-            // TODO add nice message
             exit(error_codes::INVALID_USAGE)
         },
         Ok((flag_args, pos_args)) => {
@@ -291,13 +338,18 @@ fn main() {
                 exit(0);
             }
 
-            let response = groupls(user_to_list, group_to_list);
-            if let TopLevelResponse::NoResponse(result) = response {
-                exit(result.exit_code);
+            let is_json = flag_args.contains(&FlagArg::JSON);
+            let processed_args = process_args(flag_args, pos_args);
 
-            } else {
-                
-            }
+            match processed_args { 
+                Ok(target_objects) => {
+                    output_response(groupls(target_objects), is_json);
+                },
+                Err(e) => {
+                    println!("Usage error: {}. For usage help, try: groupls --help", e);
+                    exit(error_codes::INVALID_USAGE)
+                }
+            };
         }
     }
 }
