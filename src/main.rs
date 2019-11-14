@@ -33,6 +33,8 @@ pub use responses::{
     User,
 };
 
+use serde_json::ser;
+
 use std::io::{Error as IoError, ErrorKind};
 
 const USAGE_TEXT: &'static str = r#"usage: groupls [--help] [-u | -g | --user | --group]
@@ -312,10 +314,25 @@ fn output_response(response: TopLevelResponse, is_json: bool) {
     // TODO print output
     match response {
         TopLevelResponse::GroupOverview(result) => {
+            if (is_json) {
+                println!("{}", ser::to_string(&result).expect("Could not stringify JSON"));
+            } else {
+
+            }
         },
         TopLevelResponse::UserQuery(result) => {
+            if (is_json) {
+                println!("{}", ser::to_string(&result).expect("Could not stringify JSON"));
+            } else {
+
+            }
         },
         TopLevelResponse::GroupQuery(result) => {
+            if (is_json) {
+                println!("{}", ser::to_string(&result).expect("Could not stringify JSON"));
+            } else {
+
+            }
         },
         _ => {}
     };
