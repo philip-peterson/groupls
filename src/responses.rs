@@ -1,6 +1,6 @@
-use std::string::{String};
+use std::string::String;
 
-use serde_derive::{Serialize};
+use serde_derive::Serialize;
 
 #[derive(Serialize, Clone)]
 pub struct Group {
@@ -62,5 +62,5 @@ pub enum TopLevelResponse {
     GroupOverview(GroupOverviewQueryResult),
     GroupQuery(GroupQueryResult),
     UserQuery(UserQueryResult),
-    NoResponse(NoResponseResult)
+    NoResponse(NoResponseResult),
 }

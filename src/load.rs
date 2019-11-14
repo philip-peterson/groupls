@@ -1,8 +1,8 @@
+use crate::errors::Error;
+use crate::parse::{parse_group_line, parse_passwd_line, remove_comment_from_line};
+use crate::records::{GroupEntry, PasswdEntry};
 use std::fs;
 use std::path::Path;
-use crate::parse::{parse_group_line, parse_passwd_line, remove_comment_from_line};
-use crate::errors::{Error};
-use crate::records::{GroupEntry, PasswdEntry};
 
 const GROUP_FILE: &'static str = "/etc/group";
 const PASSWD_FILE: &'static str = "/etc/passwd";
@@ -64,8 +64,7 @@ pub fn read_groups<'a>() -> Result<Vec<GroupEntry>, Box<dyn Error>> {
         }
     }
 
-    let results: std::vec::Vec<GroupEntry> =
-        lines_results.filter_map(Result::ok).collect();
+    let results: std::vec::Vec<GroupEntry> = lines_results.filter_map(Result::ok).collect();
 
     Ok(results)
 }
