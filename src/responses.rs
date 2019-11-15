@@ -38,7 +38,10 @@ pub struct GroupOverviewQueryResult {
 
 impl Display for GroupOverviewQueryResult {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        for group in self.groups.iter() {
+        for (i, group) in self.groups.iter().enumerate() {
+            if i != 0 {
+                write!(f, "\n")?;
+            }
             write!(f, "{}", group.name)?;
         }
         write!(f, "")
@@ -56,7 +59,10 @@ pub struct GroupQueryResult {
 
 impl Display for GroupQueryResult {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        for user in self.group.users.iter() {
+        for (i, user) in self.group.users.iter().enumerate() {
+            if i != 0 {
+                write!(f, "\n")?;
+            }
             write!(f, "{}", user.name)?;
         }
         write!(f, "")
@@ -72,7 +78,10 @@ pub struct UserQueryResult {
 
 impl Display for UserQueryResult {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        for group in self.user.groups.iter() {
+        for (i, group) in self.user.groups.iter().enumerate() {
+            if i != 0 {
+                write!(f, "\n")?;
+            }
             write!(f, "{}", group.name)?;
         }
         write!(f, "")

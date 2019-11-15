@@ -18,6 +18,7 @@ use std::iter::Iterator;
 use std::option::*;
 use std::process::exit;
 use std::result::Result::{self, Err, Ok};
+use std::collections::HashMap;
 
 pub use errors::Error;
 pub use records::{GroupEntry, PasswdEntry};
@@ -70,7 +71,15 @@ Untrusted input:
 
 mod error_codes {
     pub const INVALID_USAGE: i32 = 10;
+    
     pub const IO_ERROR: i32 = 20;
+    
+    pub const READ_GROUPS_ERROR: i32 = 30;
+
+    pub const READ_USERS_ERROR: i32 = 40;
+
+    pub const GROUP_NOT_FOUND: i32 = 100;
+    pub const USER_NOT_FOUND: i32 = 101;
 }
 
 fn groupls(target_objects: TargetObjects) -> TopLevelResponse {
@@ -79,17 +88,19 @@ fn groupls(target_objects: TargetObjects) -> TopLevelResponse {
 
     let groups_raw = load::read_groups();
 
+    let api_version = "1.0".to_string();
+
     match groups_raw {
         Err(error) => TopLevelResponse::NoResponse(NoResponseResult {
-            api_version: "1.0".to_string(),
-            error: format!("{}", error),
-            exit_code: 10,
+            api_version: api_version,
+            error: format!("Could not read groups: {}", error),
+            exit_code: error_codes::READ_GROUPS_ERROR,
         }),
         Ok(groups) => {
             match (user_to_list.clone(), group_to_list.clone()) {
                 (None, None) => {
                     return TopLevelResponse::GroupOverview(GroupOverviewQueryResult {
-                        api_version: "1.0".to_string(),
+                        api_version: api_version,
                         groups: groups
                             .iter()
                             .map(|record| {
@@ -104,41 +115,90 @@ fn groupls(target_objects: TargetObjects) -> TopLevelResponse {
                 _ => {}
             }
 
+            let mut groups_by_id: HashMap<i64, GroupEntry> = HashMap::new();
+            for group in groups.iter() {
+                groups_by_id.insert(group.group_id, group.clone());
+            }
+
             let users_raw = load::read_users();
             match users_raw {
                 Err(error) => {
                     return TopLevelResponse::NoResponse(NoResponseResult {
-                        api_version: "1.0".to_string(),
-                        error: format!("{}", error),
-                        exit_code: error_codes::IO_ERROR,
+                        api_version: api_version,
+                        error: format!("Could not read users: {}", error),
+                        exit_code: error_codes::READ_USERS_ERROR,
                     });
                 }
                 Ok(users) => {
-                    if let Some(_) = user_to_list {
-                        return TopLevelResponse::UserQuery(UserQueryResult {
-                            api_version: "1.0".to_string(),
-                            user: UserQuery {
-                                user_name: "foobar".to_string(),
-                                groups: vec![responses::Group {
-                                    name: "foo".to_string(),
-                                    id: 1,
-                                }],
+                    if let Some(user_name) = user_to_list {
+                        let found_user = users.iter().find(|u| u.user == user_name);
+                        match found_user {
+                            Some(found_user) => {
+                                let primary_group_id = found_user.primary_group_id;
+                                let mut response_groups = vec![];
+
+                                for group in groups {
+                                    if group.group_id == primary_group_id || group.usernames.iter().any(|u| *u == user_name) {
+                                        response_groups.push(responses::Group {
+                                            name: group.group,
+                                            id: group.group_id,
+                                        });
+                                    }
+                                }
+
+                                return TopLevelResponse::UserQuery(UserQueryResult {
+                                    api_version: api_version,
+                                    user: UserQuery {
+                                        user_name: user_name,
+                                        groups: response_groups,
+                                    },
+                                });
                             },
-                        });
+                            None => {
+                                return TopLevelResponse::NoResponse(NoResponseResult {
+                                    api_version: api_version,
+                                    error: format!("Could not find user: {}", user_name),
+                                    exit_code: error_codes::USER_NOT_FOUND,
+                                });
+                            }
+                        }
                     }
 
-                    group_to_list.unwrap();
+                    let group_name = group_to_list.expect("group_to_list was None");
+                    let found_group = groups.iter().find(|g| g.group == group_name);
+                    match found_group {
+                        Some(found_group) => {
+                            let mut group_usernames: HashSet<String> = HashSet::new();
+                            for username in found_group.usernames.iter() {
+                                group_usernames.insert(username.clone());
+                            }
 
-                    return TopLevelResponse::GroupQuery(responses::GroupQueryResult {
-                        api_version: "1.0".to_string(),
-                        group: responses::GroupQuery {
-                            group_name: "foobar".to_string(),
-                            users: vec![responses::User {
-                                name: "foo".to_string(),
-                                id: 1,
-                            }],
-                        },
-                    });
+                            let mut response_users: Vec<responses::User> = vec![];
+                            for user in users {
+                                if user.primary_group_id == found_group.group_id || group_usernames.contains(&user.user) {
+                                    response_users.push(responses::User {
+                                        name: user.user,
+                                        id: user.user_id,
+                                    });
+                                }
+                            }
+        
+                            return TopLevelResponse::GroupQuery(responses::GroupQueryResult {
+                                api_version: api_version,
+                                group: responses::GroupQuery {
+                                    group_name: group_name,
+                                    users: response_users,
+                                },
+                            });
+                        }
+                        None => {
+                            return TopLevelResponse::NoResponse(NoResponseResult {
+                                api_version: api_version,
+                                error: format!("Could not find group: {}", group_name),
+                                exit_code: error_codes::GROUP_NOT_FOUND,
+                            });
+                        }
+                    }
                 }
             }
         }
@@ -304,6 +364,9 @@ fn output_response(response: TopLevelResponse, is_json: bool) {
 
     // TODO print output
     match response {
+        TopLevelResponse::NoResponse(result) => {
+            eprintln!("Fatal: {}", result.error);
+        },
         TopLevelResponse::GroupOverview(result) => {
             if is_json {
                 let json = ser::to_string(&result).expect("Could not stringify JSON");
@@ -340,12 +403,12 @@ fn main() {
 
     match argv_data {
         Err(e) => {
-            println!("Usage error: {}.\n\nFor usage help, try: groupls --help", e);
+            eprintln!("Usage error: {}.\n\nFor usage help, try: groupls --help", e);
             exit(error_codes::INVALID_USAGE)
         }
         Ok((flag_args, pos_args)) => {
             if flag_args.contains(&FlagArg::HELP) {
-                println!("{}", USAGE_TEXT);
+                eprintln!("{}", USAGE_TEXT);
                 exit(0);
             }
 
@@ -357,7 +420,7 @@ fn main() {
                     output_response(groupls(target_objects), is_json);
                 }
                 Err(e) => {
-                    println!("Usage error: {}.\n\nFor usage help, try: groupls --help", e);
+                    eprintln!("Usage error: {}.\n\nFor usage help, try: groupls --help", e);
                     exit(error_codes::INVALID_USAGE)
                 }
             };
