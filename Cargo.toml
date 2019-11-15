@@ -1,18 +1,15 @@
 [package]
 name = "groupls"
-version = "0.1.0"
-authors = ["ironmagma"]
+version = "1.0.0"
+authors = ["philip-peterson"]
 edition = "2018"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 itertools = "0.8.0"
-clap = "2.33.0"
 serde = "1.0.101"
 serde_json = "1.0"
 serde_derive = "1.0.101"
 
-#[[bin]]
-#name = "groupls2"
-#path = "src/main.rs"
+[[bin]]
+name = "groupls"
+path = "src/main.rs"
