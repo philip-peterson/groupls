@@ -1,3 +1,5 @@
+// Contains logic for parsing system files such as /etc/passwd and /etc/group
+
 pub use crate::errors::{invalid_system_state, missing_field_error, Error};
 pub use crate::records::{GroupEntry, PasswdEntry};
 
@@ -57,3 +59,4 @@ pub fn parse_group_line<'a, 'b>(unparsed_line: &'a str) -> Result<GroupEntry, Bo
         usernames: usernames,
     })
 }
+

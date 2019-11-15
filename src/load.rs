@@ -1,5 +1,5 @@
 use crate::errors::Error;
-use crate::parse::{parse_group_line, parse_passwd_line, remove_comment_from_line};
+use crate::parse_system::{parse_group_line, parse_passwd_line, remove_comment_from_line};
 use crate::records::{GroupEntry, PasswdEntry};
 use std::fs;
 use std::path::Path;
