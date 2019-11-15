@@ -112,7 +112,12 @@ pub fn output_response(response: TopLevelResponse, is_json: bool) {
 
     match response {
         TopLevelResponse::NoResponse(result) => {
-            eprintln!("Fatal: {}", result.error);
+            if is_json {
+                let json = ser::to_string(&result).expect("Could not stringify JSON");
+                println!("{}", json);
+            } else {
+                eprintln!("Fatal: {}", result.error);
+            }
         }
         TopLevelResponse::GroupOverview(result) => {
             if is_json {

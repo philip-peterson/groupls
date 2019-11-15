@@ -86,16 +86,17 @@ pub fn parse_argv_data(
     };
 
     let valid_short_flags = vec!["-u", "-g"];
-
     let valid_long_flags = vec!["--json", "--help", "--user", "--group"];
+    let valid_long_flags_iter = valid_long_flags.iter().map(|x| String::from(*x).clone());
+    let valid_short_flags_iter = valid_short_flags.iter().map(|x| String::from(*x).clone());
 
-    let mut valid_long_flags_iter = valid_long_flags.iter().map(|x| String::from(*x).clone());
-    let mut valid_short_flags_iter = valid_short_flags.iter().map(|x| String::from(*x).clone());
-
-    let mut matches_long_flag =
-        |opt_flag: String| valid_long_flags_iter.any(|valid| opt_flag == valid);
-    let mut matches_short_flag =
-        |opt_flag: String| valid_short_flags_iter.any(|valid| opt_flag == valid);
+    let matches_long_flag =
+        |opt_flag: String| valid_long_flags_iter.clone().any(|valid| opt_flag == valid);
+    let matches_short_flag = |opt_flag: String| {
+        valid_short_flags_iter
+            .clone()
+            .any(|valid| opt_flag == valid)
+    };
 
     let mut flag_args: HashSet<FlagArg> = HashSet::new();
     let mut unrecognized_flags: HashSet<String> = HashSet::new();
