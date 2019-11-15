@@ -72,6 +72,7 @@ Untrusted input:
 
 mod error_codes {
     pub const INVALID_USAGE: i32 = 10;
+    pub const IO_ERROR: i32 = 20;
 }
 
 fn groupls(target_objects: TargetObjects) -> TopLevelResponse {
@@ -87,8 +88,8 @@ fn groupls(target_objects: TargetObjects) -> TopLevelResponse {
             exit_code: 10,
         }),
         Ok(groups) => {
-            if let None = user_to_list {
-                if let None = group_to_list {
+            match (user_to_list.clone(), group_to_list.clone()) {
+                (None, None) => {
                     return TopLevelResponse::GroupOverview(GroupOverviewQueryResult {
                         api_version: "1.0".to_string(),
                         groups: groups
@@ -101,7 +102,8 @@ fn groupls(target_objects: TargetObjects) -> TopLevelResponse {
                             })
                             .collect(),
                     });
-                }
+                },
+                _ => {}
             }
 
             let users_raw = load::read_users();
@@ -110,7 +112,7 @@ fn groupls(target_objects: TargetObjects) -> TopLevelResponse {
                     return TopLevelResponse::NoResponse(NoResponseResult {
                         api_version: "1.0".to_string(),
                         error: format!("{}", error),
-                        exit_code: 20,
+                        exit_code: error_codes::IO_ERROR,
                     });
                 }
                 Ok(users) => {
@@ -162,13 +164,49 @@ fn process_args(
     flag_args: HashSet<FlagArg>,
     pos_args: Vec<String>,
 ) -> Result<TargetObjects, Box<dyn Error>> {
+    if pos_args.len() > 1 {
+        return Err(errors::usage_error("Too many positional arguments (expected at most 1)".to_string()));
+    }
+
+    let first_arg = pos_args.iter().next();
+
     if flag_args.contains(&FlagArg::USER) {
+        match first_arg {
+            None => {
+                return Err(errors::usage_error("Missing required argument OBJECT".to_string()));
+            }
+            Some(user_name) => {
+                return Ok(TargetObjects {
+                    user_to_list: Some(user_name.to_string()),
+                    group_to_list: None,
+                });
+            }
+        }
     } else if flag_args.contains(&FlagArg::GROUP) {
-    } else {
-    };
+        match first_arg {
+            None => {
+                return Err(errors::usage_error("Missing required argument OBJECT".to_string()));
+            }
+            Some(group_name) => {
+                return Ok(TargetObjects {
+                    user_to_list: None,
+                    group_to_list: Some(group_name.to_string()),
+                });
+            }
+        }
+    }
+
+    if let Some(object_name) = first_arg {
+        return Err(errors::usage_error(
+            format!(
+                "Cannot list object of name `{}`; not specified as user or group. Use the `-u` or `-g` flag to specify",
+                object_name
+            )
+        ));
+    }
 
     return Ok(TargetObjects {
-        user_to_list: Some("".to_string()),
+        user_to_list: None,
         group_to_list: None,
     });
 }
@@ -270,29 +308,26 @@ fn output_response(response: TopLevelResponse, is_json: bool) {
     match response {
         TopLevelResponse::GroupOverview(result) => {
             if (is_json) {
-                println!(
-                    "{}",
-                    ser::to_string(&result).expect("Could not stringify JSON")
-                );
+                let json = ser::to_string(&result).expect("Could not stringify JSON");
+                println!("{}", json);
             } else {
+                println!("{}", result);
             }
         }
         TopLevelResponse::UserQuery(result) => {
             if (is_json) {
-                println!(
-                    "{}",
-                    ser::to_string(&result).expect("Could not stringify JSON")
-                );
+                let json = ser::to_string(&result).expect("Could not stringify JSON");
+                println!("{}", json);
             } else {
+                println!("{}", result);
             }
         }
         TopLevelResponse::GroupQuery(result) => {
             if (is_json) {
-                println!(
-                    "{}",
-                    ser::to_string(&result).expect("Could not stringify JSON")
-                );
+                let json = ser::to_string(&result).expect("Could not stringify JSON");
+                println!("{}", json);
             } else {
+                println!("{}", result);
             }
         }
         _ => {}
@@ -302,12 +337,12 @@ fn output_response(response: TopLevelResponse, is_json: bool) {
 }
 
 fn main() {
-    let args: Vec<String> = env::args().collect();
+    let args: Vec<String> = env::args().skip(1).collect();
     let argv_data = parse_argv_data(args);
 
     match argv_data {
         Err(e) => {
-            println!("Usage error: {}. For usage help, try: groupls --help", e);
+            println!("Usage error: {}.\n\nFor usage help, try: groupls --help", e);
             exit(error_codes::INVALID_USAGE)
         }
         Ok((flag_args, pos_args)) => {
@@ -324,7 +359,7 @@ fn main() {
                     output_response(groupls(target_objects), is_json);
                 }
                 Err(e) => {
-                    println!("Usage error: {}. For usage help, try: groupls --help", e);
+                    println!("Usage error: {}.\n\nFor usage help, try: groupls --help", e);
                     exit(error_codes::INVALID_USAGE)
                 }
             };

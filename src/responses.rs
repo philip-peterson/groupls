@@ -1,3 +1,4 @@
+use std::fmt::{self, Display, Formatter};
 use std::string::String;
 
 use serde_derive::Serialize;
@@ -35,11 +36,31 @@ pub struct GroupOverviewQueryResult {
     pub groups: Vec<Group>,
 }
 
+impl Display for GroupOverviewQueryResult {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        for group in self.groups.iter() {
+            write!(f, "{}", group.name)?;
+        }
+        write!(f, "")
+    }
+}
+
 #[derive(Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct GroupQueryResult {
     pub api_version: String,
+
+    // TODO rename GroupQuery and similar types, as these names don't make sense
     pub group: GroupQuery,
+}
+
+impl Display for GroupQueryResult {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        for user in self.group.users.iter() {
+            write!(f, "{}", user.name)?;
+        }
+        write!(f, "")
+    }
 }
 
 #[derive(Serialize, Clone)]
@@ -47,6 +68,15 @@ pub struct GroupQueryResult {
 pub struct UserQueryResult {
     pub api_version: String,
     pub user: UserQuery,
+}
+
+impl Display for UserQueryResult {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        for group in self.user.groups.iter() {
+            write!(f, "{}", group.name)?;
+        }
+        write!(f, "")
+    }
 }
 
 #[derive(Serialize, Clone)]
