@@ -19,7 +19,7 @@ flag to your command.
 ## Language
 This program was written entirely in Rust. The intention was to serve as a personal project for
 yours truly to learn the language. If you have feedback or suggestions on how to do things better,
-I would love to hear! Just shoot me an email, or open an issue.
+I would love to hear! Just shoot me an email, or [open an issue](https://github.com/philip-peterson/groupls/issues/new).
 
 ## Examples
 
