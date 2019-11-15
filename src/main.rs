@@ -10,7 +10,6 @@ mod shapes;
 
 extern crate itertools;
 
-use std::collections::HashMap;
 use std::collections::HashSet;
 use std::env;
 use std::iter::Iterator;
@@ -107,11 +106,6 @@ fn groupls(target_objects: TargetObjects) -> TopLevelResponse {
                     });
                 }
                 _ => {}
-            }
-
-            let mut groups_by_id: HashMap<i64, GroupEntry> = HashMap::new();
-            for group in groups.iter() {
-                groups_by_id.insert(group.group_id, group.clone());
             }
 
             let users_raw = load::read_users();
