@@ -16,13 +16,13 @@ pub struct User {
 }
 
 #[derive(Serialize, Clone)]
-pub struct UserQuery {
+pub struct UserQueryResponse {
     pub user_name: String,
     pub groups: Vec<Group>,
 }
 
 #[derive(Serialize, Clone)]
-pub struct GroupQuery {
+pub struct GroupQueryResponse {
     pub group_name: String,
     pub users: Vec<User>,
 }
@@ -52,9 +52,7 @@ impl Display for GroupOverviewQueryResult {
 #[serde(rename_all = "camelCase")]
 pub struct GroupQueryResult {
     pub api_version: String,
-
-    // TODO rename GroupQuery and similar types, as these names don't make sense
-    pub group: GroupQuery,
+    pub group: GroupQueryResponse,
 }
 
 impl Display for GroupQueryResult {
@@ -73,7 +71,7 @@ impl Display for GroupQueryResult {
 #[serde(rename_all = "camelCase")]
 pub struct UserQueryResult {
     pub api_version: String,
-    pub user: UserQuery,
+    pub user: UserQueryResponse,
 }
 
 impl Display for UserQueryResult {

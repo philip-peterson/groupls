@@ -11,19 +11,19 @@ mod shapes;
 extern crate itertools;
 
 use std::boxed::Box;
+use std::collections::HashMap;
 use std::collections::HashSet;
 use std::env;
 use std::iter::Iterator;
 use std::option::*;
 use std::process::exit;
 use std::result::Result::{self, Err, Ok};
-use std::collections::HashMap;
 
 pub use errors::Error;
 pub use records::{GroupEntry, PasswdEntry};
 pub use responses::{
-    GroupOverviewQueryResult, GroupQuery, GroupQueryResult, NoResponseResult, TopLevelResponse,
-    User, UserQuery, UserQueryResult,
+    GroupOverviewQueryResult, GroupQueryResponse, GroupQueryResult, NoResponseResult,
+    TopLevelResponse, User, UserQueryResponse, UserQueryResult,
 };
 pub use shapes::{IntToStringList, StringList, StringToStringList};
 
@@ -70,7 +70,7 @@ Untrusted input:
 
 mod error_codes {
     pub const INVALID_USAGE: i32 = 10;
-    
+
     pub const READ_GROUPS_ERROR: i32 = 30;
 
     pub const READ_USERS_ERROR: i32 = 40;
@@ -108,7 +108,7 @@ fn groupls(target_objects: TargetObjects) -> TopLevelResponse {
                             })
                             .collect(),
                     });
-                },
+                }
                 _ => {}
             }
 
@@ -135,7 +135,9 @@ fn groupls(target_objects: TargetObjects) -> TopLevelResponse {
                                 let mut response_groups = vec![];
 
                                 for group in groups {
-                                    if group.group_id == primary_group_id || group.usernames.iter().any(|u| *u == user_name) {
+                                    if group.group_id == primary_group_id
+                                        || group.usernames.iter().any(|u| *u == user_name)
+                                    {
                                         response_groups.push(responses::Group {
                                             name: group.group,
                                             id: group.group_id,
@@ -145,12 +147,12 @@ fn groupls(target_objects: TargetObjects) -> TopLevelResponse {
 
                                 return TopLevelResponse::UserQuery(UserQueryResult {
                                     api_version: api_version,
-                                    user: UserQuery {
+                                    user: UserQueryResponse {
                                         user_name: user_name,
                                         groups: response_groups,
                                     },
                                 });
-                            },
+                            }
                             None => {
                                 return TopLevelResponse::NoResponse(NoResponseResult {
                                     api_version: api_version,
@@ -172,17 +174,19 @@ fn groupls(target_objects: TargetObjects) -> TopLevelResponse {
 
                             let mut response_users: Vec<responses::User> = vec![];
                             for user in users {
-                                if user.primary_group_id == found_group.group_id || group_usernames.contains(&user.user) {
+                                if user.primary_group_id == found_group.group_id
+                                    || group_usernames.contains(&user.user)
+                                {
                                     response_users.push(responses::User {
                                         name: user.user,
                                         id: user.user_id,
                                     });
                                 }
                             }
-        
+
                             return TopLevelResponse::GroupQuery(responses::GroupQueryResult {
                                 api_version: api_version,
-                                group: responses::GroupQuery {
+                                group: responses::GroupQueryResponse {
                                     group_name: group_name,
                                     users: response_users,
                                 },
@@ -220,7 +224,9 @@ fn process_args(
     pos_args: Vec<String>,
 ) -> Result<TargetObjects, Box<dyn Error>> {
     if pos_args.len() > 1 {
-        return Err(errors::usage_error("Too many positional arguments (expected at most 1)".to_string()));
+        return Err(errors::usage_error(
+            "Too many positional arguments (expected at most 1)".to_string(),
+        ));
     }
 
     let first_arg = pos_args.iter().next();
@@ -228,7 +234,9 @@ fn process_args(
     if flag_args.contains(&FlagArg::USER) {
         match first_arg {
             None => {
-                return Err(errors::usage_error("Missing required argument OBJECT".to_string()));
+                return Err(errors::usage_error(
+                    "Missing required argument OBJECT".to_string(),
+                ));
             }
             Some(user_name) => {
                 return Ok(TargetObjects {
@@ -240,7 +248,9 @@ fn process_args(
     } else if flag_args.contains(&FlagArg::GROUP) {
         match first_arg {
             None => {
-                return Err(errors::usage_error("Missing required argument OBJECT".to_string()));
+                return Err(errors::usage_error(
+                    "Missing required argument OBJECT".to_string(),
+                ));
             }
             Some(group_name) => {
                 return Ok(TargetObjects {
@@ -362,7 +372,7 @@ fn output_response(response: TopLevelResponse, is_json: bool) {
     match response {
         TopLevelResponse::NoResponse(result) => {
             eprintln!("Fatal: {}", result.error);
-        },
+        }
         TopLevelResponse::GroupOverview(result) => {
             if is_json {
                 let json = ser::to_string(&result).expect("Could not stringify JSON");
