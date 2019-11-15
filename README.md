@@ -55,7 +55,9 @@ _devicemgr
 $ # list all groups that the user _www is in
 $ groupls -u _www
 _www
+```
 
+```shell
 $ # list all the groups that user _teamsserver is in
 $ groupls -u _teamsserver
 mail
@@ -65,7 +67,9 @@ _teamsserver
 _odchpass
 _postgres
 _webauthserver
+```
 
+```shell
 $ # Add --json for easy JSON output!
 $ groupls --json -u _teamsserver
 {"apiVersion":"1.0","user":{"user_name":"_teamsserver","groups":[{"name":"mail","id":6},{"name":"_www","id":70},{"name":"_calendar","id":93},{"name":"_teamsserver","id":94},{"name":"_odchpass","id":209},{"name":"_postgres","id":216},{"name":"_webauthserver","id":221}]}}
