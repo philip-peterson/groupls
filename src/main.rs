@@ -359,7 +359,6 @@ fn output_response(response: TopLevelResponse, is_json: bool) {
         _ => 0,
     };
 
-    // TODO print output
     match response {
         TopLevelResponse::NoResponse(result) => {
             eprintln!("Fatal: {}", result.error);
