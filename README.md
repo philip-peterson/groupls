@@ -3,7 +3,7 @@
 ## Overview
 
 `groupls` is a Unix command-line utility to explore group memberships. Ever wanted to find
-a list of all groups on the system? GroupLS can do that for you.
+a list of all users belonging to a group? GroupLS can do that for you.
 
 ## Features
 
