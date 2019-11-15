@@ -13,7 +13,6 @@ extern crate itertools;
 use std::boxed::Box;
 use std::collections::HashSet;
 use std::env;
-use std::fmt::format;
 use std::iter::Iterator;
 use std::option::*;
 use std::process::exit;
@@ -71,8 +70,6 @@ Untrusted input:
 
 mod error_codes {
     pub const INVALID_USAGE: i32 = 10;
-    
-    pub const IO_ERROR: i32 = 20;
     
     pub const READ_GROUPS_ERROR: i32 = 30;
 
@@ -391,7 +388,6 @@ fn output_response(response: TopLevelResponse, is_json: bool) {
                 println!("{}", result);
             }
         }
-        _ => {}
     };
 
     exit(exit_code);

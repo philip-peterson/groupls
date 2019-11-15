@@ -19,8 +19,8 @@ pub fn parse_passwd_line<'a, 'b>(unparsed_line: &'a str) -> Result<PasswdEntry, 
         .parse::<i64>()
         .map_err(|_| invalid_system_state("user ID number"))?;
 
-    let groupid = String::from(userid_raw);
-    let groupid_parsed = userid
+    let groupid = String::from(groupid_raw);
+    let groupid_parsed = groupid
         .parse::<i64>()
         .map_err(|_| invalid_system_state("group ID number"))?;
 
