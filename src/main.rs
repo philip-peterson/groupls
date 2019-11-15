@@ -1,33 +1,30 @@
 #![feature(trait_alias)]
 
+mod args;
 mod errors;
 mod load;
 mod parse_system;
 mod records;
 mod responses;
 mod shapes;
-mod args;
 
 extern crate itertools;
 
-use std::boxed::Box;
 use std::collections::HashMap;
 use std::collections::HashSet;
 use std::env;
 use std::iter::Iterator;
 use std::process::exit;
-use std::result::Result::{self, Err, Ok};
+use std::result::Result::{Err, Ok};
 
+pub use args::{parse_argv_data, process_args, FlagArg, TargetObjects};
 pub use errors::Error;
 pub use records::{GroupEntry, PasswdEntry};
 pub use responses::{
-    GroupOverviewQueryResult, GroupQueryResponse, GroupQueryResult, NoResponseResult,
-    TopLevelResponse, User, UserQueryResponse, UserQueryResult,
+    output_response, GroupOverviewQueryResult, GroupQueryResponse, GroupQueryResult,
+    NoResponseResult, TopLevelResponse, User, UserQueryResponse, UserQueryResult,
 };
 pub use shapes::{IntToStringList, StringList, StringToStringList};
-pub use args::{process_args, FlagArg, TargetObjects, parse_argv_data};
-
-use serde_json::ser;
 
 const USAGE_TEXT: &'static str = r#"usage: groupls [--help] [-u | -g | --user | --group]
         [--json] [--] <OBJECT>
@@ -204,45 +201,6 @@ fn groupls(target_objects: TargetObjects) -> TopLevelResponse {
             }
         }
     }
-}
-
-fn output_response(response: TopLevelResponse, is_json: bool) {
-    let exit_code = match response.clone() {
-        TopLevelResponse::NoResponse(result) => result.exit_code,
-        _ => 0,
-    };
-
-    match response {
-        TopLevelResponse::NoResponse(result) => {
-            eprintln!("Fatal: {}", result.error);
-        }
-        TopLevelResponse::GroupOverview(result) => {
-            if is_json {
-                let json = ser::to_string(&result).expect("Could not stringify JSON");
-                println!("{}", json);
-            } else {
-                println!("{}", result);
-            }
-        }
-        TopLevelResponse::UserQuery(result) => {
-            if is_json {
-                let json = ser::to_string(&result).expect("Could not stringify JSON");
-                println!("{}", json);
-            } else {
-                println!("{}", result);
-            }
-        }
-        TopLevelResponse::GroupQuery(result) => {
-            if is_json {
-                let json = ser::to_string(&result).expect("Could not stringify JSON");
-                println!("{}", json);
-            } else {
-                println!("{}", result);
-            }
-        }
-    };
-
-    exit(exit_code);
 }
 
 fn main() {

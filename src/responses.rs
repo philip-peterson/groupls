@@ -1,7 +1,9 @@
 use std::fmt::{self, Display, Formatter};
+use std::process::exit;
 use std::string::String;
 
 use serde_derive::Serialize;
+use serde_json::ser;
 
 #[derive(Serialize, Clone)]
 pub struct Group {
@@ -100,4 +102,43 @@ pub enum TopLevelResponse {
     GroupQuery(GroupQueryResult),
     UserQuery(UserQueryResult),
     NoResponse(NoResponseResult),
+}
+
+pub fn output_response(response: TopLevelResponse, is_json: bool) {
+    let exit_code = match response.clone() {
+        TopLevelResponse::NoResponse(result) => result.exit_code,
+        _ => 0,
+    };
+
+    match response {
+        TopLevelResponse::NoResponse(result) => {
+            eprintln!("Fatal: {}", result.error);
+        }
+        TopLevelResponse::GroupOverview(result) => {
+            if is_json {
+                let json = ser::to_string(&result).expect("Could not stringify JSON");
+                println!("{}", json);
+            } else {
+                println!("{}", result);
+            }
+        }
+        TopLevelResponse::UserQuery(result) => {
+            if is_json {
+                let json = ser::to_string(&result).expect("Could not stringify JSON");
+                println!("{}", json);
+            } else {
+                println!("{}", result);
+            }
+        }
+        TopLevelResponse::GroupQuery(result) => {
+            if is_json {
+                let json = ser::to_string(&result).expect("Could not stringify JSON");
+                println!("{}", json);
+            } else {
+                println!("{}", result);
+            }
+        }
+    };
+
+    exit(exit_code);
 }

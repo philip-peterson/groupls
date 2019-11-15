@@ -59,4 +59,3 @@ pub fn parse_group_line<'a, 'b>(unparsed_line: &'a str) -> Result<GroupEntry, Bo
         usernames: usernames,
     })
 }
-

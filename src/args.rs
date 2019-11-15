@@ -74,7 +74,9 @@ pub fn process_args(
     });
 }
 
-pub fn parse_argv_data(args: Vec<String>) -> Result<(HashSet<FlagArg>, Vec<String>), Box<dyn Error>> {
+pub fn parse_argv_data(
+    args: Vec<String>,
+) -> Result<(HashSet<FlagArg>, Vec<String>), Box<dyn Error>> {
     let double_hyphen_pos = args.iter().position(|x| x == "--");
     let opt_args = {
         match double_hyphen_pos {

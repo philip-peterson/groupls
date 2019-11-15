@@ -1,4 +1,3 @@
-use std::boxed::Box;
 use std::fmt::Display;
 use std::io::{Error as IoError, ErrorKind as IoErrorKind};
 use std::string::String;
