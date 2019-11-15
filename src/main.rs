@@ -1,4 +1,3 @@
-#![feature(try_blocks)]
 #![feature(trait_alias)]
 
 mod errors;
