@@ -29,8 +29,6 @@ pub use shapes::{IntToStringList, StringList, StringToStringList};
 
 use serde_json::ser;
 
-use std::io::{Error as IoError, ErrorKind};
-
 const USAGE_TEXT: &'static str = r#"usage: groupls [--help] [-u | -g | --user | --group]
         [--json] [--] <OBJECT>
 
@@ -239,15 +237,15 @@ fn parse_argv_data(args: Vec<String>) -> Result<(HashSet<FlagArg>, Vec<String>),
     let opt_args_as_strings = opt_args.iter().map(|x| x.to_string());
 
     for opt_arg in opt_args_as_strings {
-        if (opt_arg.clone().starts_with("-")) {
-            if (matches_long_flag(opt_arg.clone())) {
-                if (opt_arg == "--json") {
+        if opt_arg.clone().starts_with("-") {
+            if matches_long_flag(opt_arg.clone()) {
+                if opt_arg == "--json" {
                     flag_args.insert(FlagArg::JSON);
-                } else if (opt_arg == "--help") {
+                } else if opt_arg == "--help" {
                     flag_args.insert(FlagArg::HELP);
-                } else if (opt_arg == "--user") {
+                } else if opt_arg == "--user" {
                     flag_args.insert(FlagArg::USER);
-                } else if (opt_arg == "--group") {
+                } else if opt_arg == "--group" {
                     flag_args.insert(FlagArg::GROUP);
                 } else {
                     return Err(errors::internal_error(format!(
@@ -255,10 +253,10 @@ fn parse_argv_data(args: Vec<String>) -> Result<(HashSet<FlagArg>, Vec<String>),
                         opt_arg
                     )));
                 }
-            } else if (matches_short_flag(opt_arg.clone())) {
-                if (opt_arg == "-u") {
+            } else if matches_short_flag(opt_arg.clone()) {
+                if opt_arg == "-u" {
                     flag_args.insert(FlagArg::USER);
-                } else if (opt_arg == "-g") {
+                } else if opt_arg == "-g" {
                     flag_args.insert(FlagArg::GROUP);
                 } else {
                     return Err(errors::internal_error(format!(
@@ -307,7 +305,7 @@ fn output_response(response: TopLevelResponse, is_json: bool) {
     // TODO print output
     match response {
         TopLevelResponse::GroupOverview(result) => {
-            if (is_json) {
+            if is_json {
                 let json = ser::to_string(&result).expect("Could not stringify JSON");
                 println!("{}", json);
             } else {
@@ -315,7 +313,7 @@ fn output_response(response: TopLevelResponse, is_json: bool) {
             }
         }
         TopLevelResponse::UserQuery(result) => {
-            if (is_json) {
+            if is_json {
                 let json = ser::to_string(&result).expect("Could not stringify JSON");
                 println!("{}", json);
             } else {
@@ -323,7 +321,7 @@ fn output_response(response: TopLevelResponse, is_json: bool) {
             }
         }
         TopLevelResponse::GroupQuery(result) => {
-            if (is_json) {
+            if is_json {
                 let json = ser::to_string(&result).expect("Could not stringify JSON");
                 println!("{}", json);
             } else {
