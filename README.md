@@ -27,8 +27,6 @@ On BSD, run `./install-bsd.sh`
 
 On Linux, run `./install-linux.sh`
 
-You may need to add `sudo` depending on your system.
-
 ## Examples
 
 ```shell
