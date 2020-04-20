@@ -21,6 +21,14 @@ This program was written entirely in Rust. The intention was to serve as a perso
 yours truly to learn the language. If you have feedback or suggestions on how to do things better,
 I would love to hear! Just shoot me an email, or [open an issue](https://github.com/philip-peterson/groupls/issues/new).
 
+## Installation
+
+On BSD, run `./install-bsd.sh`
+
+On Linux, run `./install-linux.sh`
+
+You may need to add `sudo` depending on your system.
+
 ## Examples
 
 ```shell
