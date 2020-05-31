@@ -22,13 +22,14 @@ flag to your command.
 
 `groupls` does not, sadly, support network-attached users or groups, such as those stored in an LDAP directory or stored in any way other than the standard `/etc/passwd` and `/etc/group` files. This may be supported in a future release if there is enough demand.
 
-### Open to suggestions
-
-If you have ideas or visions for how you would like `groupls` to work, please open an issue! I am very interested in collaborations.
-
 ## Language
 This program was written entirely in Rust. The intention was to serve as a personal project for
-yours truly to learn the language. If you have feedback or suggestions on how to do things better,
+yours truly to learn the language. 
+
+
+### Open to suggestions
+
+If you have feedback or suggestions on how you would like `groupls` to work,
 I would love to hear! Just shoot me an email, or [open an issue](https://github.com/philip-peterson/groupls/issues/new).
 
 ## Installation
